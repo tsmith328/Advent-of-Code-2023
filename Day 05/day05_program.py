@@ -29,12 +29,70 @@ def parse_map(mapping: str) -> dict[tuple[int, int], int]:
     return map_dict
 
 def build_seed_ranges(seeds: list[int]):
-    new_seeds = []
     for i in range(0, len(seeds), 2):
         for j in range(seeds[i + 1]):
             yield seeds[i] + j
+
+def build_seed_ranges_better(seeds: list[int]):
+    return [(seed_start, seed_end + seed_start - 1) for seed_start, seed_end in zip(seeds[::2], seeds[1::2])]
+
+def run_maps_better(seeds, maps) -> int:
+    if len(maps) == 0:
+        # Base case. no more maps so just take smallest starting seed value
+        return min([seed[0] for seed in seeds])
+    mapping = maps.pop(0) # will remove current map from list.
+    new_seeds = set()
+    for (seed_start, seed_end) in seeds:
+        seed_mapped = False
+        for (map_start, map_end) in mapping.keys():
+            diff = mapping[(map_start, map_end)]
+            if has_overlap((seed_start, seed_end), (map_start, map_end)):
+                # Do stuff
+                # 4 cases:
+                #   Seeds starts outside map range and ends inside map range: break into 2 ranges
+                #   Seeds starts inside map range and ends outside map range: break into 2 ranges
+                #   Seeds starts inside map range and ends inside map range: keep as one range, but move it
+                #   Seeds starts outside map range and ends outside map range: break into 3 ranges
+                seed_mapped = True
+                if seed_start >= map_start and seed_end <= map_end:
+                    # Case 3. Just need to move the seed start and end
+                    new_seed_start = seed_start + diff
+                    new_seed_end = seed_end + diff
+                    new_seeds.add((new_seed_start, new_seed_end))
+                elif seed_start < map_start and seed_end >= map_start and seed_end <= map_end:
+                    # Case 1
+                    boundary = map_start
+                    new_seed1 = (seed_start, boundary - 1)
+                    new_seed2 = (boundary + diff, seed_end + diff)
+                    new_seeds.add(new_seed1)
+                    new_seeds.add(new_seed2)
+                elif seed_start <= map_end and seed_end > map_end and seed_start >= map_start:
+                    # Case 2
+                    boundary = map_end
+                    new_seed1 = (seed_start + diff, boundary + diff)
+                    new_seed2 = (boundary + 1, seed_end)
+                    new_seeds.add(new_seed1)
+                    new_seeds.add(new_seed2)
+                elif seed_start < map_start and seed_end > map_end:
+                    # Case 4
+                    new_seed1 = (seed_start, map_start - 1)
+                    new_seed2 = (map_start + diff, map_end + diff)
+                    new_seed3 = (map_end + 1, seed_end)
+                    new_seeds.add(new_seed1)
+                    new_seeds.add(new_seed2)
+                    new_seeds.add(new_seed3)
+                else:
+                    seed_mapped = False
+        if seed_mapped == False:
+            new_seeds.add((seed_start, seed_end))
+    # Done processing all seeds at this step. Recurse to move to next map
+    return run_maps_better(new_seeds, maps) # map list had current level popped off.
     
-    #return new_seeds
+def has_overlap(range1, range2) -> bool:
+    start1, end1 = range1
+    start2, end2 = range2
+
+    return start1 <= end2 and start2 <= end1
 
 def run_maps(seeds, maps) -> int:
     min_location = -1
@@ -62,10 +120,14 @@ def run_case(file_name: str) -> str:
     maps = [parse_map(data) for data in input_data[1:]]
 
     # Build big seed list
-    seeds2 = build_seed_ranges(seeds)
+    #seeds2 = build_seed_ranges(seeds)
+    # Build list of seed ranges
+    seeds2 = build_seed_ranges_better(seeds)
+    seeds2 = set(seeds2)
 
     locations1 = run_maps(seeds, maps)
-    locations2 = run_maps(seeds2, maps)
+    locations2 = run_maps_better(seeds2, maps)
+    #locations2 = run_maps(seeds2, maps)
 
     return f"The lowest location number for the small number of seeds is: {locations1}." \
     + f"{os.linesep}\tThe lowest location number for the stupid number of seeds is: {locations2}."
