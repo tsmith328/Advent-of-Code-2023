@@ -28,16 +28,16 @@ def parse_map(mapping: str) -> dict[tuple[int, int], int]:
 
     return map_dict
 
-def build_seed_ranges(seeds: list[int]) -> list[int]:
+def build_seed_ranges(seeds: list[int]):
     new_seeds = []
     for i in range(0, len(seeds), 2):
         for j in range(seeds[i + 1]):
-            new_seeds.append(seeds[i] + j)
+            yield seeds[i] + j
     
-    return new_seeds
+    #return new_seeds
 
-def run_maps(seeds, maps) -> list[int]:
-    locations = []
+def run_maps(seeds, maps) -> int:
+    min_location = -1
 
     for seed in seeds:
         spot = seed
@@ -47,9 +47,10 @@ def run_maps(seeds, maps) -> list[int]:
                     spot += diff
                     break
         
-        locations.append(spot)
+        if min_location < 0 or spot < min_location:
+            min_location = spot
     
-    return locations
+    return min_location
 
 def run_case(file_name: str) -> str:
     input_data = read_file(file_name)
@@ -66,8 +67,8 @@ def run_case(file_name: str) -> str:
     locations1 = run_maps(seeds, maps)
     locations2 = run_maps(seeds2, maps)
 
-    return f"The lowest location number for the small number of seeds is: {min(locations1)}." \
-    + f"{os.linesep}\tThe lowest location number for the stupid number of seeds is: {min(locations2)}."
+    return f"The lowest location number for the small number of seeds is: {locations1}." \
+    + f"{os.linesep}\tThe lowest location number for the stupid number of seeds is: {locations2}."
 
 def main() -> None:
     # Run test case
@@ -76,7 +77,7 @@ def main() -> None:
 
     # Run Full Problem Set
     print("Problem:")
-    #print("\t" + run_case(input_file))
+    print("\t" + run_case(input_file))
     
 
 if __name__ == "__main__":
