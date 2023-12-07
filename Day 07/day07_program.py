@@ -2,6 +2,7 @@ import os
 from math import floor
 from math import ceil
 from enum import Enum
+from itertools import product
 
 test_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 07/day07_input_test.txt"
 input_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 07/day07_input.txt"
@@ -59,6 +60,7 @@ class Card(OrderedEnum):
     FOUR = 4
     THREE = 3
     TWO = 2
+    JOKER = 1
 
 
 class Hand:
@@ -68,15 +70,62 @@ class Hand:
     def __str__(self):
         return f"Bet {self.bet} on {self.cards} which is a {self.type}."
 
-    def __init__(self, cards, bet):
+    def __init__(self, cards, bet, has_jokers):
         self.bet = bet
-        self.cards = Hand.get_cards(cards)
-        self.type = Hand.get_type(self.cards)
+        self.has_jokers = has_jokers
+        self.cards = Hand.get_cards(cards, has_jokers)
+        self.type = Hand.get_type(self.cards, has_jokers)
 
-    def get_type(cards: list[Card]) -> HandType:
-        return HandType.FOUR_OF_A_KIND
+    def get_type(cards: list[Card], has_joker: bool) -> HandType:
+        if has_joker and any([True for x in cards if x == Card.JOKER]):
+            # Only need to run this if we actually have a joker.
+            best_type = HandType.HIGH_CARD
+            non_joker_cards = [card for card in Card if card != Card.JOKER and card != Card.JACK]
+            all_hands = product(non_joker_cards, repeat = 5) # get all possible hands.
+            try_hands = []
+            for hand in list(all_hands):
+                ok = True
+                # Check to see if all cards line up except Js.
+                for i, card in enumerate(hand):
+                    if cards[i] != Card.JOKER: # If original card is a Joker, don't need to check anything.
+                        if cards[i] != card:
+                            ok = False
+                            break
+                if ok:
+                    try_hands.append(hand)
+            
+            for hand in try_hands:
+                # Try each possible hand and get highest type
+                try_type = Hand.get_type(hand, False)
+                if try_type > best_type:
+                    best_type = try_type
+            
+            return best_type
 
-    def get_cards(cards: str) -> list[Card]:
+        # Do something with Jokers. Recursive?
+        card_dict = {card: len(list(filter(lambda c: c == card, cards))) for card in set(cards)}
+        # 5 of a kind?
+        if len(set(cards)) == 1:
+            return HandType.FIVE_OF_A_KIND
+        
+        most_cards = max(card_dict.values())
+        least_cards = min(card_dict.values())
+        if most_cards == 4:
+            return HandType.FOUR_OF_A_KIND
+        if most_cards == 3 and least_cards == 2:
+            return HandType.FULL_HOUSE
+        if most_cards == 3 and least_cards < 2:
+            return HandType.THREE_OF_A_KIND
+        if most_cards == 1:
+            return HandType.HIGH_CARD
+        # Need to distinguish between one pair or two pair.
+        pairs = [k for k,v in card_dict.items() if v == 2]
+        if len(pairs) == 1:
+            return HandType.ONE_PAIR
+        
+        return HandType.TWO_PAIR
+
+    def get_cards(cards: str, has_joker: bool) -> list[Card]:
         my_cards = []
         my_card = None
         for card in cards:
@@ -87,7 +136,10 @@ class Hand:
             elif card == "Q":
                 my_card = Card.QUEEN
             elif card == "J":
-                my_card = Card.JACK
+                if has_joker:
+                    my_card = Card.JOKER
+                else:
+                    my_card = Card.JACK
             elif card == "T":
                 my_card = Card.TEN
             elif card == "9":
@@ -115,28 +167,51 @@ class Hand:
             return True
         if self.type < other.type:
             return False
-        for i in range(self.cards):
+        for i in range(len(self.cards)):
             my_card = self.cards[i]
-            their_card = self.cards[i]
+            their_card = other.cards[i]
             if my_card > their_card:
                 return True
             if my_card < their_card:
                 return False
         
         return False
+    
+    def __eq__(self, other):
+        return self.type == other.type and self.cards == other.cards
+    
+    def __lt__(self, other):
+        return not self.is_stronger(other)
+    
+    def __gt__(self, other):
+        return self.is_stronger(other)
+    
+    def __le__(self, other):
+        return self == other or self < other
+    
+    def __gt__(self, other):
+        return self == other or self > other
         
-def build_hands(input_str: list[str]) -> list[Hand]:
-    return [Hand(hand.split()[0], int(hand.split()[1])) for hand in input_str]
+def build_hands(input_str: list[str], with_jokers: bool) -> list[Hand]:
+    return [Hand(hand.split()[0], int(hand.split()[1]), with_jokers) for hand in input_str]
+
+def get_winnings(input_data, with_jokers) -> int:
+    hands = build_hands(input_data, with_jokers)
+    hands = sorted(hands)
+    total_winnings = sum([(i + 1) * hand.bet for i, hand in enumerate(hands)])
+
+    return total_winnings
+
 
 def run_case(file_name: str) -> str:
     input_data = read_file(file_name)
     
-    hands = build_hands(input_data)
+    total_winnings = get_winnings(input_data, False)
 
- 
+    total_winnings_with_jokers = get_winnings(input_data, True)
 
-    return f"The product of number of ways to win is: {''}." \
-    + f"{os.linesep}\tThe number of ways to win the single race is: {''}."
+    return f"The total winnings of my hands is: {total_winnings}." \
+    + f"{os.linesep}\tThe total winnings of my hand when playing with Jokers is: {total_winnings_with_jokers}."
 
 def main() -> None:
     # Run test case
