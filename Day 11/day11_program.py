@@ -2,9 +2,7 @@ import os
 from math import ceil
 
 
-test_file1 = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 11/day11_input_test1.txt"
-test_file2 = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 11/day11_input_test2.txt"
-test_file3 = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 11/day11_input_test3.txt"
+test_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 11/day11_input_test.txt"
 
 input_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 11/day11_input.txt"
 
@@ -39,14 +37,8 @@ def run_case(file_name: str) -> str:
 
 def main() -> None:
     # Run test case
-    print("Test Case 1 (Should be 1):")
-    print("\t" + run_case(test_file1))
-
-    print("Test Case 2 (Should be 1):")
-    print("\t" + run_case(test_file2))
-
-    print("Test Case 3 (Should be 4):")
-    print("\t" + run_case(test_file3))
+    print("Test Case 1:")
+    print("\t" + run_case(test_file))
 
     # Run Full Problem Set
     print("Problem:")
