@@ -48,6 +48,18 @@ def get_combos(input_data):
     
     return total_combos
 
+def get_combos_rec(line: str, nums: str):
+    combos = []
+    if len(line) == 0:
+        return ['']
+    # find first ? and split string into two
+    first_idx = line.find('?')
+    if first_idx == -1:
+        # No ? present.
+        return line
+    line_left, line_right = line.split('?', 1)
+    
+
 def unfolded(data_list):
     new_list = []
 
@@ -60,14 +72,18 @@ def unfolded(data_list):
     
     return new_list
 
+def find_combos_recursively(input_data: list[str]) -> int:
+    for line in input_data:
+        get_combos_rec(*line.split())
+
 def run_case(file_name: str) -> str:
     input_data = read_file(file_name)
 
     total_combos_1 = get_combos(input_data)
 
     input_data = unfolded(input_data)
-
-    total_combos_2 = get_combos(input_data)
+    total_combos_2 = 0
+    total_combos_2 = get_combos(input_data) 
 
     return f"The total number of valid combinations is: {total_combos_1}." \
           + f"{os.linesep}\tThe total number of valid unfolded combinations is: {total_combos_2}."
