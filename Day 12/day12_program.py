@@ -93,6 +93,8 @@ def main() -> None:
     print("Test Case 1:")
     print("\t" + run_case(test_file))
 
+https://www.reddit.com/r/adventofcode/comments/18hbbxe/2023_day_12python_stepbystep_tutorial_with_bonus/
+
     # Run Full Problem Set
     print("Problem:")
     print("\t" + run_case(input_file))
