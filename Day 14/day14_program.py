@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from functools import cache
 
 test_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 14/day14_input_test.txt"
 
@@ -52,7 +53,7 @@ def find_new_pos(mirror: list[list[str]], x: int, y: int, direction: Direction) 
 
     num_rocks = 0
 
-    while curr_char != '#' and curr_x >= 0 and curr_y >= 0 and curr_x < max_x and curr_x < max_y:
+    while curr_char != '#' and (curr_x + dx) >= 0 and (curr_y + dy) >= 0 and (curr_x + dx) < max_x and (curr_y + dy) < max_y:
         # Count how many other rocks we'll pass.
         if curr_char == 'O':
             num_rocks += 1
@@ -73,7 +74,7 @@ def move_mirror(mirror: list[list[str]], direction: Direction) -> list[tuple[int
     rocks = [(x,y) for y,row in enumerate(mirror) for x,char in enumerate(row) if char == 'O']
     new_rocks = []
     for rock in rocks:
-        new_pos = find_new_pos(mirror, rock[0], rock[1], Direction.UP)
+        new_pos = find_new_pos(mirror, rock[0], rock[1], direction)
         new_rocks.append(new_pos)
     
     return new_rocks
@@ -103,18 +104,30 @@ def spin_cycle_stage(mirror: list[list[str]], direction: Direction) -> list[list
     new_mirror = add_rocks(new_mirror, new_rocks)
     return new_mirror
 
+def find_rocks(mirror: list[list[str]]):
+    rocks = [(x,y) for y,line in enumerate(mirror) for x,char in enumerate(line) if char == 'O']
+    return rocks
+
 def spin_cycle(mirror: list[list[int]]) -> list[tuple[int,int]]:
     num_cycles = 1_000_000_000
     new_rocks = []
-    for i in range(num_cycles):
-        mirror = spin_cycle_stage(mirror, Direction.UP)
-        mirror = spin_cycle_stage(mirror, Direction.LEFT)
-        mirror = spin_cycle_stage(mirror, Direction.DOWN)
-        if i == num_cycles - 1:
-            # Last move, get rock locations.
-            new_rocks = spin_cycle_stage(mirror, Direction.RIGHT)
+    states = dict()
+    new_mirror = mirror
+    # Cycles every 3 rounds
+    for i in range(50 + (num_cycles % 3)):
+        new_mirror = spin_cycle_stage(new_mirror, Direction.UP)
+        new_mirror = spin_cycle_stage(new_mirror, Direction.LEFT)
+        new_mirror = spin_cycle_stage(new_mirror, Direction.DOWN)
+        new_mirror = spin_cycle_stage(new_mirror, Direction.RIGHT)
+        rocks = find_rocks(new_mirror)
+        rock_tuple = tuple(rocks)
+
+        if rock_tuple in states.keys():
+            print(f"Found repeat at {i} with {states[rock_tuple]}.")
+        else:
+            states[rock_tuple] = i
     
-    return new_rocks
+    return rocks
 
 def run_case(file_name: str) -> str:
     #input_data = read_file(file_name)
@@ -133,6 +146,7 @@ O.#..O.#.#
     input_data = [l.strip() for l in input_str.splitlines() if len(l.strip()) > 0]
 
     mirror = load_mirror(input_data)
+    Move Mirror broke
     rock_locations = move_mirror(mirror, Direction.UP)
     weight = calculate_weight(len(mirror), rock_locations)
 
