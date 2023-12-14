@@ -133,6 +133,7 @@ def spin_cycle(mirror: list[list[int]]) -> list[tuple[int,int]]:
             cycle_len = i - states[rock_tuple]
             break
         else:
+            print(f"Unique state at {i}.")
             states[rock_tuple] = i
         
     # cycle_len should be the length of the cycle
@@ -140,8 +141,10 @@ def spin_cycle(mirror: list[list[int]]) -> list[tuple[int,int]]:
     cycle_start = i - cycle_len
     remainder = num_cycles % (cycle_len - 1)
     target_cycle = cycle_start + remainder
+    print(f"Cycle starts at {cycle_start} with length {cycle_len}. Running until {target_cycle}.")
     new_mirror = mirror # Reset mirror
     for i in range(target_cycle):
+        print(f"Running {i}...")
         new_mirror = spin_cycle_stage(new_mirror, Direction.UP)
         new_mirror = spin_cycle_stage(new_mirror, Direction.LEFT)
         new_mirror = spin_cycle_stage(new_mirror, Direction.DOWN)
@@ -151,24 +154,9 @@ def spin_cycle(mirror: list[list[int]]) -> list[tuple[int,int]]:
     return rocks
 
 def run_case(file_name: str) -> str:
-    #input_data = read_file(file_name)
+    input_data = read_file(file_name)
     
-    input_str = """
-O....#....
-O.OO#....#
-.....##...
-OO.#O....O
-.O.....O#.
-O.#..O.#.#
-..O..#O..O
-.......O..
-#....###..
-#OO..#...."""
-
-    input_data = [l.strip() for l in input_str.splitlines() if len(l.strip()) > 0]
-
     mirror = load_mirror(input_data)
-    #Move Mirror broke
     rock_locations = move_mirror(mirror, Direction.UP)
     weight = calculate_weight(len(mirror), rock_locations)
 
