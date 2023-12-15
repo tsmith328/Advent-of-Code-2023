@@ -31,6 +31,12 @@ def run_case(file_name: str) -> str:
 
     hash_val = hash_steps(input_data.split(','))
 
+    # Part 2:
+    # 1. Create a hashmap/dictionary using hash function as key
+    # 2. dict should be int -> list[Lens] or list[str]
+    # 3. Look up which list to use. Then follow directions from step
+    # 4. Traverse dict.items() to calculate focusing power.
+
     return f"The total hash value is: {hash_val}." \
           + f"{os.linesep}\tThe total weight after the spin cycle is: {''}."
 
