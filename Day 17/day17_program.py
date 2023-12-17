@@ -21,9 +21,40 @@ class Direction(Enum):
     SOUTH = 2
     EAST = 3
 
+def build_field(file_data: list[list[str]]) -> dict[tuple[int,int],int]:
+    field = dict()
+    for y, line in enumerate(file_data):
+        for x, char in enumerate(line):
+            field[(x, y)] = int(char)
+    
+    return field
+
+def get_diag_weight(field: dict[tuple[int,int],int]) -> int:
+    """Gets weight of diagonal path as a baseline for comparing weights of other paths."""
+    max_x = max([point[0] for point in field.keys()])
+    max_y = max([point[1] for point in field.keys()])
+    curr_x = 0
+    curr_y = 0
+    total_weight = 0
+    while curr_x < max_x and curr_y < max_y:
+        # Move right
+        curr_x += 1
+        weight = field[(curr_x, curr_y)]
+        total_weight += weight
+        # Move down
+        curr_y += 1
+        weight = field[(curr_x, curr_y)]
+        total_weight += weight
+    
+    return total_weight
+
 
 def run_case(file_name: str) -> str:
     input_data = read_file(file_name)
+
+    field = build_field(input_data)
+
+    diag_weight = get_diag_weight(field)
 
     return f"The number of spots energized is: {''}." \
           + f"{os.linesep}\tThe highest possible energy level is: {''}."
