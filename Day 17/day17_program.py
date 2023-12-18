@@ -3,10 +3,8 @@ from enum import Enum
 import math
 
 test_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 17/day17_input_test.txt"
-test_file = "C:/Users/Kory/Documents/Tyler Programs/Advent-of-Code-2023/Day 17/day17_input_test.txt"
 
 input_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 17/day17_input.txt"
-input_file = "C:/Users/Kory/Documents/Tyler Programs/Advent-of-Code-2023/Day 17/day17_input.txt"
 
 def read_file(file_name: str) -> list[list[str]]:
     """
@@ -31,25 +29,6 @@ def build_field(file_data: list[list[str]]) -> dict[tuple[int,int],int]:
             field[(x, y)] = int(char)
     
     return field
-
-def get_diag_weight(field: dict[tuple[int,int],int]) -> int:
-    """Gets weight of diagonal path as a baseline for comparing weights of other paths."""
-    max_x = max([point[0] for point in field.keys()])
-    max_y = max([point[1] for point in field.keys()])
-    curr_x = 0
-    curr_y = 0
-    total_weight = 0
-    while curr_x < max_x and curr_y < max_y:
-        # Move right
-        curr_x += 1
-        weight = field[(curr_x, curr_y)]
-        total_weight += weight
-        # Move down
-        curr_y += 1
-        weight = field[(curr_x, curr_y)]
-        total_weight += weight
-    
-    return total_weight
 
 def get_unvisited_neighbors(field: dict[tuple[int,int], int], 
                             position: tuple[int,int], 
@@ -91,7 +70,61 @@ def get_direction(point_from: tuple[int,int], point_to: tuple[int,int]) -> Direc
             return None
     return None
 
-def find_best_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tuple[int,int], best: int) -> list[tuple[int,int]]:
+def get_smallest(from_list: list[tuple[int,int]], weights: dict[tuple[int,int], int]) -> tuple[int,int]:
+    min_point = None
+    min_val = math.inf
+    for item in from_list:
+        if weights[item] < min_val:
+            min_point = item
+            min_val = weights[item]
+    
+    return min_point
+
+def find_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tuple[int,int]) -> list[tuple[int,int]]:
+    # Prepare Dijkstra's Alg.
+    unvisited = list(field.keys())
+    weights = {point: 0 if point == start else math.inf for point in unvisited}
+    prev = {point: None for point in unvisited}
+    runs = {point: 0 for point in unvisited}
+    dirs = {point: None for point in unvisited}
+
+    # Continue until list of unvisited nodes is empty
+    while unvisited:
+        # Sort queue by weight and get first item (min weight)
+        next_point = get_smallest(unvisited, weights)
+        unvisited.remove(next_point)
+        current = next_point
+        if current == dest: # Break early if we are at the destination node.
+            break
+        
+        neighbors = get_unvisited_neighbors(field, current, [], dirs[current], runs[current] >= 3)
+
+        for neighbor in neighbors:
+            if neighbor in unvisited:
+                new_weight = weights[current] + field[neighbor]
+                if new_weight < weights[neighbor]:
+                    weights[neighbor] = new_weight
+                    prev[neighbor] = current
+                    new_dir = get_direction(current, neighbor)
+                    dirs[neighbor] = new_dir
+                    # Check if we need to reset our run count.
+                    if new_dir == dirs[current]:
+                        runs[neighbor] = 1 + runs[current]
+                    else:
+                        runs[neighbor] = 1
+    
+    # Build path back to start
+    path = [dest]
+    curr = dest
+    while True:
+        next_node = prev[curr]
+        if next_node == start:
+            break
+        path.append(next_node)
+        curr = next_node
+    return list(reversed(path))
+
+def find_best_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tuple[int,int]) -> list[tuple[int,int]]:
     visited = [start]
     steps_since_turn = 0
     best_weights = dict()
@@ -124,7 +157,7 @@ def find_best_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest:
         if movement_dir == dir_from:
             steps_since_turn += 1
         else:
-            steps_since_turn = 0
+            steps_since_turn = 1
             dir_from = movement_dir
         curr_weight = best_weights[current]
         current = next
@@ -164,8 +197,8 @@ def run_case(file_name: str) -> str:
     field_width = max([x[0] for x in field.keys()])
     field_height = max([x[1] for x in field.keys()])
 
-    diag_weight = get_diag_weight(field)
-    path = find_best_path(field, (0,0), (field_width, field_height), diag_weight)
+    #path = find_best_path(field, (0,0), (field_width, field_height))
+    path = find_path(field, (0, 0), (field_width, field_height))
     heat_loss = sum([field[point] for point in path])
 
     return f"The minimum heat lost is: {heat_loss}." \
