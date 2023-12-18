@@ -35,18 +35,18 @@ def get_unvisited_neighbors(field: dict[tuple[int,int], int],
                             visited: list[tuple[int,int]],
                             dir_from: Direction,
                             need_to_turn: bool) -> list[tuple[int,int]]:
-    neighbor_up = (position[0], position[1] - 1)
-    neighbor_down = (position[0], position[1] + 1)
-    neighbor_left = (position[0] - 1, position[1])
-    neighbor_right = (position[0] + 1, position[1])
+    neighbor_up = ((position[0][0], position[0][1] - 1), Direction.SOUTH)
+    neighbor_down = ((position[0][0], position[0][1] + 1), Direction.NORTH)
+    neighbor_left = ((position[0][0] - 1, position[0][1]), Direction.EAST)
+    neighbor_right = ((position[0][0] + 1, position[0][1]), Direction.WEST)
     neighbors = []
-    if neighbor_up in field.keys() and neighbor_up not in visited and dir_from != Direction.NORTH and (dir_from != Direction.SOUTH or not need_to_turn):
+    if neighbor_up[0] in field.keys() and neighbor_up not in visited and dir_from != Direction.NORTH and (dir_from != Direction.SOUTH or not need_to_turn):
         neighbors.append(neighbor_up)
-    if neighbor_right in field.keys() and neighbor_right not in visited and dir_from != Direction.EAST and (dir_from != Direction.WEST or not need_to_turn):
+    if neighbor_right[0] in field.keys() and neighbor_right not in visited and dir_from != Direction.EAST and (dir_from != Direction.WEST or not need_to_turn):
         neighbors.append(neighbor_right)
-    if neighbor_down in field.keys() and neighbor_down not in visited and dir_from != Direction.SOUTH and (dir_from != Direction.NORTH or not need_to_turn):
+    if neighbor_down[0] in field.keys() and neighbor_down not in visited and dir_from != Direction.SOUTH and (dir_from != Direction.NORTH or not need_to_turn):
         neighbors.append(neighbor_down)
-    if neighbor_left in field.keys() and neighbor_left not in visited and dir_from != Direction.WEST and (dir_from != Direction.EAST or not need_to_turn):
+    if neighbor_left[0] in field.keys() and neighbor_left not in visited and dir_from != Direction.WEST and (dir_from != Direction.EAST or not need_to_turn):
         neighbors.append(neighbor_left)
     
     return neighbors
@@ -71,7 +71,7 @@ def get_direction(point_from: tuple[int,int], point_to: tuple[int,int]) -> Direc
     return None
 
 def get_smallest(from_list: list[tuple[int,int]], weights: dict[tuple[int,int], int]) -> tuple[int,int]:
-    min_point = None
+    min_point = from_list[0]
     min_val = math.inf
     for item in from_list:
         if weights[item] < min_val:
@@ -82,8 +82,8 @@ def get_smallest(from_list: list[tuple[int,int]], weights: dict[tuple[int,int], 
 
 def find_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tuple[int,int]) -> list[tuple[int,int]]:
     # Prepare Dijkstra's Alg.
-    unvisited = list(field.keys())
-    weights = {point: 0 if point == start else math.inf for point in unvisited}
+    unvisited = list(zip(list(field.keys()) * 4, [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST] * len(field.keys())))
+    weights = {point: 0 if point[0] == start else math.inf for point in unvisited}
     prev = {point: None for point in unvisited}
     runs = {point: 0 for point in unvisited}
     dirs = {point: None for point in unvisited}
@@ -101,11 +101,11 @@ def find_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tupl
 
         for neighbor in neighbors:
             if neighbor in unvisited:
-                new_weight = weights[current] + field[neighbor]
+                new_weight = weights[current] + field[neighbor[0]]
                 if new_weight < weights[neighbor]:
                     weights[neighbor] = new_weight
                     prev[neighbor] = current
-                    new_dir = get_direction(current, neighbor)
+                    new_dir = neighbor[1]
                     dirs[neighbor] = new_dir
                     # Check if we need to reset our run count.
                     if new_dir == dirs[current]:
@@ -114,11 +114,12 @@ def find_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tupl
                         runs[neighbor] = 1
     
     # Build path back to start
-    path = [dest]
-    curr = dest
+    path_first = [x for x, v in prev.items() if v is not None and x[0] == dest][0]
+    path = [path_first]
+    curr = path_first
     while True:
         next_node = prev[curr]
-        if next_node == start:
+        if next_node[0] == start:
             break
         path.append(next_node)
         curr = next_node
@@ -199,7 +200,7 @@ def run_case(file_name: str) -> str:
 
     #path = find_best_path(field, (0,0), (field_width, field_height))
     path = find_path(field, (0, 0), (field_width, field_height))
-    heat_loss = sum([field[point] for point in path])
+    heat_loss = sum([field[point[0]] for point in path])
 
     return f"The minimum heat lost is: {heat_loss}." \
           + f"{os.linesep}\tThe highest possible energy level is: {''}."
