@@ -3,6 +3,8 @@ from enum import Enum
 import math
 
 test_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 17/day17_input_test.txt"
+test_file = "C:/Users/tms/Downloads/AOC/Advent-of-Code-2023/Day 17/day17_input_test.txt"
+test_file_2 = "C:/Users/tms/Downloads/AOC/Advent-of-Code-2023/Day 17/day17_input_test_2.txt"
 
 input_file = "E:/Documents/Advent of Code/Advent-of-Code-2023/Day 17/day17_input.txt"
 
@@ -21,6 +23,75 @@ class Direction(Enum):
     WEST = 1
     SOUTH = 2
     EAST = 3
+
+class Move:
+    direction: Direction
+    new_pos: tuple[int,int]
+    cost: int
+
+    def __init__(self, direction, new_pos, cost):
+        self.direction = direction
+        self.new_pos = new_pos
+        self.cost = cost
+
+class Node:
+    position: tuple[int,int]
+    direction_from: Direction
+    cost: int
+    prev: "Node"
+
+    def __hash__(self):
+        return hash(hash(self.position) + hash(self.direction_from))
+    
+    def __eq__(self, other) -> bool:
+        if other is Node:
+            return self.position == other.position and self.direction_from == other.direction_from
+        return False
+
+    def __init__(self, position, direction_from, prev):
+        self.position = position
+        self.direction_from = direction_from
+        self.cost = math.inf
+        self.prev = prev
+
+def get_moves(field: dict[tuple[int,int], int], curr_node: Node) -> list[Move]:
+    pass
+
+def find_path_2(field: dict[tuple[int,int], int], start: tuple[int,int], dest: tuple[int,int]) -> list[tuple[int,int]]:
+    visited = set()
+    start_node = Node(start, None, None)
+    start_node.cost = 0
+    boundary = [start_node]
+
+    # Continue until we run out of nodes
+    while boundary:
+        # Get next node and add to visited. Remove from boundary
+        node = get_min(boundary)
+
+        visited.add(node)
+        boundary.remove(node)
+
+        # Stop early if we reached the end
+        if node.position == dest:
+            break
+
+        moves = get_moves(field, node)
+
+        for move in moves:
+            neighbor = Node(move.new_pos, move.direction, node)
+            move_cost = move.cost
+            new_cost = move_cost + node.cost
+            # Check to see if we already have this neighbor in our lists.
+            existing_neighbor = [n for n in boundary if n == neighbor]
+            if existing_neighbor:
+                neighbor = existing_neighbor[0]
+            
+
+
+def get_min(node_list: list[Node]) -> Node:
+    min_cost = min([n.cost for n in node_list])
+    min_nodes = [node for node in node_list if node.cost == min_cost]
+    return min_nodes[0]
 
 def build_field(file_data: list[list[str]]) -> dict[tuple[int,int],int]:
     field = dict()
@@ -125,72 +196,6 @@ def find_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tupl
         curr = next_node
     return list(reversed(path))
 
-def find_best_path(field: dict[tuple[int,int],int], start: tuple[int,int], dest: tuple[int,int]) -> list[tuple[int,int]]:
-    visited = [start]
-    steps_since_turn = 0
-    best_weights = dict()
-    frontier = []
-    current = start
-    dir_from = None
-    curr_weight = 0
-    prev = dict() # Stores nodes that gave min weight. Allows back-tracking.
-    # initialized known weights from start to this node
-    for point in field.keys():
-        best_weights[point] = 0 if point == start else math.inf
-    
-    # Populate frontier with first neighbors and get best possible weight to each.
-    neighbors = get_unvisited_neighbors(field, current, visited, dir_from, steps_since_turn >= 3)
-    for item in neighbors:
-        frontier.append(item)
-        best_weights[item] = curr_weight + field[item]
-        prev[item] = current
-
-    while current != dest and frontier:
-        # Sort the frontier
-        frontier = sorted(frontier, key=lambda i: best_weights[i])
-
-        # Get next-lowest spot and add to visited and path
-        next = frontier.pop(0)
-        if next == dest:
-            current = dest
-            break
-        movement_dir = get_direction(prev[next], next)
-        if movement_dir == dir_from:
-            steps_since_turn += 1
-        else:
-            steps_since_turn = 1
-            dir_from = movement_dir
-        curr_weight = best_weights[current]
-        current = next
-        
-        visited.append(current)
-
-        # Update current path weight
-        curr_weight += field[current]
-
-        # Get available neighbors, add to our frontier, and update seen distances if lower
-        neighbors = get_unvisited_neighbors(field, current, visited, dir_from, steps_since_turn >= 3)
-        for neighbor in neighbors:
-            if neighbor not in frontier:
-                frontier.append(neighbor)
-            possible_weight = curr_weight + field[neighbor]
-            if best_weights[neighbor] is None or possible_weight < best_weights[neighbor]:
-                best_weights[neighbor] = curr_weight + field[neighbor]
-                prev[neighbor] = current
-    
-    # Should be at destination.
-    if current == dest:
-        path = [dest]
-        node = prev[dest]
-        while node != start:
-            path.append(node)
-            node = prev[node]
-        return reversed(path)
-
-    else:
-        return []
-
-
 def run_case(file_name: str) -> str:
     input_data = read_file(file_name)
 
@@ -210,9 +215,12 @@ def main() -> None:
     print("Test Case 1:")
     print("\t" + run_case(test_file))
 
+    print("Test Case 2:")
+    print("\t" + run_case(test_file_2))
+
     # Run Full Problem Set
     print("Problem:")
-    print("\t" + run_case(input_file))
+    #print("\t" + run_case(input_file))
 
 
 if __name__ == "__main__":
